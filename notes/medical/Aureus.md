@@ -1,3 +1,0 @@
-# AUREUS
-
-vzorčna stran

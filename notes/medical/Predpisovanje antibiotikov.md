@@ -1,3 +1,0 @@
-# Predpisovanje antibiotikov
-
-vzorčna stran

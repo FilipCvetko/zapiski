@@ -6,19 +6,12 @@ through an object oriented framework.
 import logging
 from os import listdir
 from os.path import isfile, join
+from style import hide_menu, margins, bullets
 
 # Import necessary libraries
 import streamlit as st
 
 st.set_page_config(page_title="Medicinko")
-
-hide_menu = """
-<style>
-#MainMenu {
-    visibility:hidden;
-}
-</style>
-"""
 
 
 # Define the multipage class to manage the multiple apps in our program
@@ -31,6 +24,8 @@ class MultiPage:
         self.med_dir = directory + "/medical"
         self.tech_dir = directory + "/tech"
         st.markdown(hide_menu, unsafe_allow_html=True)
+        st.markdown(bullets, unsafe_allow_html=True)
+        st.markdown(margins, unsafe_allow_html=True)
         # Initialize a unique session ID
         self.session_id = self._get_session()
         self.initialize_session_vars()
@@ -84,7 +79,7 @@ class MultiPage:
                 st.session_state["current_choice"] = izbrano
 
         with st.expander("Zapiski", expanded=True):
-            st.markdown(tekst)
+            st.markdown(tekst, unsafe_allow_html=True)
 
 
 # Create an instance of the app
