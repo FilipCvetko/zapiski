@@ -2,17 +2,23 @@
 This file is the framework for generating multiple Streamlit applications 
 through an object oriented framework. 
 """
-
+import re
+import requests
 import logging
 from os import listdir
 from os.path import isfile, join
 from style import hide_menu, margins, bullets
+import json
+import time
 
 # Import necessary libraries
 import streamlit as st
 
 st.set_page_config(page_title="Medicinko")
 
+
+DOBOVA_IP = "193.95.248.125:33444"
+#DOBOVA_IP = "192.168.1.2:33444"
 
 # Define the multipage class to manage the multiple apps in our program
 class MultiPage:
@@ -50,36 +56,75 @@ class MultiPage:
             raise RuntimeError("Couldn't get your Streamlit Session object.")
         return str(hash(session_info.session))[6:18]
 
-    def _list_all_md_files(self, directory):
-        all_files = [f for f in listdir(directory) if isfile(join(directory, f))]
-        md_files = [f.split(".md")[0] for f in all_files if f.endswith("md")]
-        return md_files
+    def _list_all_md_files(self, domain):
+        r = requests.post("http://" + DOBOVA_IP + "/get_fnames", json={"query": domain})
+        return json.loads(r.content.decode("utf-8"))["filenames"]
 
     def initialize_session_vars(self):
         if "med_files" not in st.session_state:
-            st.session_state["med_files"] = self._list_all_md_files(self.med_dir)
+            st.session_state["med_files"] = self._list_all_md_files("medical")
         if "tech_files" not in st.session_state:
-            st.session_state["tech_files"] = self._list_all_md_files(self.tech_dir)
+            st.session_state["tech_files"] = self._list_all_md_files("tech")
         if "current_choice" not in st.session_state:
             st.session_state["current_choice"] = ""
 
+    def load_current_page(self, response):
+        # View text with response.text
+        readme_buffer = []
+        pattern = r"(w?.png)|(w?.jpg)|(w?.jpeg)"
+        for line in response.text.splitlines():
+
+            readme_buffer.append(line)
+
+            if re.search(pattern, line):
+                fname = line.strip().rstrip()
+                some_str = "\n".join(readme_buffer[:-1])
+
+                st.markdown("".join((some_str)), unsafe_allow_html=True)
+
+                # Perform image logic
+                img_request = requests.post(
+                    "http://" + DOBOVA_IP + "/get_img_file", json={"fname": fname}
+                )
+
+                if img_request.status_code == 200:
+                    st.image(img_request.content)
+                readme_buffer.clear()
+
+        some_str = "\n".join(readme_buffer)
+        st.markdown("".join((some_str)), unsafe_allow_html=True)
+        st.write("")
+
     def run(self):
         with st.expander("Iskanje", expanded=True):
-            domena = st.radio("Domena", options=("Medicina", "Tehnologija"))
+            col1, col2 = st.columns(2)
+            domena = col1.radio("Domena", options=("Medicina", "Tehnologija"))
+            st.session_state["password"] = col2.text_input("Geslo", type="password")
             if domena == "Medicina":
                 izbrano = st.selectbox(label="", options=st.session_state["med_files"])
-                with open(self.med_dir + "/" + izbrano + ".md", "r") as file:
-                    tekst = file.read()
             else:
                 izbrano = st.selectbox(label="", options=st.session_state["tech_files"])
-                with open(self.tech_dir + "/" + izbrano + ".md", "r") as file:
-                    tekst = file.read()
+
+            if domena == "Medicina":
+                _domain = "medical"
+            if domena == "Tehnologija":
+                _domain = "tech"
+
             if izbrano != st.session_state["current_choice"] and izbrano != "":
+
                 logging.info(f"User chose [[{izbrano}]]")
                 st.session_state["current_choice"] = izbrano
 
         with st.expander("Zapiski", expanded=True):
-            st.markdown(tekst, unsafe_allow_html=True)
+            if st.session_state["password"] == "gggg":
+                r = requests.post(
+                    "http://" + DOBOVA_IP + "/get_md_file",
+                    json={"fname": izbrano, "domain": _domain},
+                )
+                if r.status_code == 200:
+                    self.load_current_page(r)
+            else:
+                st.write("Vpiši geslo.")
 
 
 # Create an instance of the app
