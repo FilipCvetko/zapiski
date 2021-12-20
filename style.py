@@ -52,5 +52,9 @@ hr {
   margin-right: 12px;
   margin-left: 12px;
 }
+img {
+  margin-right: 12px;
+  margin-left: 12px;
+}
 </style>
 """
