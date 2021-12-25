@@ -42,7 +42,8 @@ h3 {
 }
 p {
   margin-right: 12px;
-  margin-left: 12px;
+  margin-left: 0px;
+  margin-bottom: 0px;
 }
 blockquote {
   margin-right: 12px;
